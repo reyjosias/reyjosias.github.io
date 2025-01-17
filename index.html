@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Qweeme - Llamadas P2P</title>
+  <style>
+    :root {
+      --primary-color: #6d28d9;
+      --primary-hover: #5b21b6;
+      --bg-gradient: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 100%);
+      --card-bg: rgba(255, 255, 255, 0.08);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --secondary-color: #a5b4fc;
+      --danger-color: #dc2626;
+      --danger-hover: #b91c1c;
+    }
+
+    body {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: var(--bg-gradient);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #fff;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      margin: 2rem;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+      background: linear-gradient(to right, #fff, var(--secondary-color));
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+    }
+
+    /* General Card */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2rem;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      margin-bottom: 2rem;
+    }
+
+    /* ID Setup Section */
+    .id-setup h2 {
+      margin-top: 0;
+      color: var(--secondary-color);
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      padding: 1rem;
+      margin: 0.5rem 0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: white;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    input[type="text"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
+    }
+
+    button {
+      padding: 0.8rem 1.8rem;
+      border-radius: 12px;
+      border: none;
+      background: var(--primary-color);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    button:not(:disabled):hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    button:disabled {
+      background: #4a4a4a;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    /* Buttons Danger */
+    .logout-btn {
+      background: var(--danger-color) !important;
+    }
+    .logout-btn:hover {
+      background: var(--danger-hover) !important;
+    }
+
+    /* Status Info */
+    .status {
+      margin-top: 2rem;
+      padding: 1rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+    }
+    #status {
+      margin: 0;
+      color: var(--secondary-color);
+      font-size: 0.95rem;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .status-dot.connected {
+      background-color: #22c55e;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+    }
+    .status-dot.disconnected {
+      background-color: #dc2626;
+      box-shadow: 0 0 8px rgba(220, 38, 38, 0.5);
+    }
+
+    /* Hidden Utility */
+    .hidden {
+      display: none;
+    }
+
+    /* App Title & Subtitle */
+    .app-logo {
+      font-size: 3.5rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(to right, #fff, #c4b5fd);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center;
+    }
+    .app-subtitle {
+      font-size: 1.1rem;
+      color: var(--secondary-color);
+      text-align: center;
+      margin-bottom: 3rem;
+      opacity: 0.8;
+    }
+
+    /* Call Container */
+    .call-container .id-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .current-id {
+      font-size: 1rem;
+      color: var(--secondary-color);
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin: 2rem 0;
+    }
+
+    /* Chat Interface */
+    .chat-interface {
+      position: fixed;
+      bottom: 0;
+      right: 20px;
+      width: 350px;
+      max-height: 70vh;
+      display: none;
+      flex-direction: column;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px 16px 0 0;
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+    }
+    .chat-header {
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 16px 16px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .message {
+      max-width: 80%;
+      padding: 0.5rem 1rem;
+      border-radius: 12px;
+      margin: 2px 0;
+      word-wrap: break-word;
+    }
+    .message.sent {
+      background: var(--primary-color);
+      align-self: flex-end;
+    }
+    .message.received {
+      background: rgba(255, 255, 255, 0.1);
+      align-self: flex-start;
+    }
+    .chat-input {
+      padding: 1rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+    .chat-input input {
+      flex: 1;
+    }
+    .close-chat {
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      padding: 0.5rem;
+      font-size: 1.5rem;
+    }
+
+    /* Video Call Interface */
+    .video-call-interface {
+      display: none; /* Aseguramos que esté oculta al inicio */
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 90%;
+      max-width: 800px;
+      height: 70vh;
+      transform: translate(-50%, -50%);
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      z-index: 2000;
+      overflow: hidden;
+      flex-direction: column;
+    }
+    .video-header {
+      background: rgba(0,0,0,0.2);
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .video-content {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 1rem;
+      justify-content: center;
+      align-items: center;
+    }
+    video {
+      background: #000;
+      border-radius: 12px;
+      width: 45%;
+      max-height: 45vh;
+    }
+    .video-controls {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .video-header h2 {
+      margin: 0;
+      color: var(--secondary-color);
+    }
+    .close-video-call {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .container {
+        margin: 1rem;
+        padding: 1rem;
+      }
+      .call-container {
+        padding: 1.5rem;
+      }
+      h1 {
+        font-size: 2rem;
+      }
+      button {
+        width: 100%;
+      }
+      .chat-interface {
+        width: 95%;
+        right: 2.5%;
+      }
+      .video-content video {
+        width: 100%;
+        max-height: 40vh;
+      }
+    }
+    .logo-image {
+      display: block;
+      margin: 0 auto 1.5rem;
+      max-width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img
+      src="https://previews.dropbox.com/p/thumb/ACjU_xic84SHbllXjy22Jx0rp2QQKhOjUoJRUSsEOclAOiq48TEWo31loSJwdmOPmNf2tvzcJluQ9Q00uVTkeWoKK2fc-1R-_VeBkXiwJ5TSZnyZlnwAtg4JratR04G4n_GsWu5D6JzkiXqUyU6kOmnxz6xV-PloiFnqQMZH4ECkbQCAb2A3MiL-jKUfaxzR-BXumMzImROIJVlcwgf1hnmTp1o0hOCAtKgZ0sSJnbjnZa7muLlaiVwiwUqpLQUlTA2jliDVkSUs6zp-z93Q_8nLBz1StriXwTN0nLARTRipEf1V46Hr52Uk9SaktzL6STyfjM7XGFA-CotcWUb9ZhuP/p.png"
+      alt="Qweeme Logo"
+      class="logo-image"
+    />
+    <h1 class="app-logo">Qweeme</h1>
+    <p class="app-subtitle">Cute Community • Simple & Secure</p>
+
+    <!-- Sección para configurar el ID -->
+    <div class="id-setup card" id="idSetup">
+      <h2>Configura tu identificador</h2>
+      <input type="text" id="customId" placeholder="Ingresa tu identificador deseado">
+      <button id="connectButton">Conectar</button>
+    </div>
+
+    <!-- Sección principal de llamadas -->
+    <div class="call-container card hidden" id="callInterface">
+      <div class="id-info">
+        <span class="current-id">ID actual: <span id="currentId"></span></span>
+        <button id="changeId">Cambiar ID</button>
+        <button id="logoutBtn" class="logout-btn">Salir</button>
+      </div>
+
+      <div class="connection-info">
+        <h2 style="color: var(--secondary-color);">Tu ID de conexión:</h2>
+        <textarea id="localId" readonly></textarea>
+        <h2 style="color: var(--secondary-color);">Conectar con ID:</h2>
+        <textarea id="remoteId"></textarea>
+      </div>
+      
+      <div class="controls">
+        <button id="startButton">Iniciar Micrófono</button>
+        <button id="connectPeerButton" disabled>Conectar con usuario</button>
+        <button id="disconnectPeerButton" disabled>Desconectar</button>
+        <button id="callButton" disabled>Llamar Audio</button>
+        <button id="videoCallButton" disabled>Videollamada</button>
+        <button id="chatButton" disabled>Chatear</button>
+        <button id="hangupButton" disabled>Colgar</button>
+      </div>
+      
+      <div class="status">
+        <p id="status">
+          <span class="status-dot disconnected"></span>
+          Estado: Desconectado
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interfaz de Chat -->
+  <div class="chat-interface" id="chatInterface">
+    <div class="chat-header">
+      <span>Chat con: <span id="chatWithUser"></span></span>
+      <button class="close-chat" id="closeChat">×</button>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input">
+      <input type="text" id="messageInput" placeholder="Escribe un mensaje...">
+      <button id="sendMessage">Enviar</button>
+    </div>
+  </div>
+
+  <!-- Interfaz de Videollamada -->
+  <div class="video-call-interface" id="videoCallInterface">
+    <div class="video-header">
+      <h2>Videollamada en curso</h2>
+      <button class="close-video-call" id="closeVideoCall">×</button>
+    </div>
+    <div class="video-content">
+      <video id="localVideo" autoplay muted></video>
+      <video id="remoteVideo" autoplay></video>
+    </div>
+    <div class="video-controls">
+      <button id="endVideoCall">Terminar Videollamada</button>
+    </div>
+  </div>
+
+  <!-- Librería PeerJS -->
+  <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+  <!-- Script principal -->
+  <script>
+    let peer = null;
+    let currentCall = null;
+    let localStream = null;        // Para audio
+    let localVideoStream = null;   // Para video
+    let savedId = localStorage.getItem('callerId');
+    let currentChatConnection = null;
+
+    // Control para permitir solo 1 conexión de datos/voz/video a la vez
+    let connectedPeerId = null; // ID del peer con el que estamos conectados
+
+    // Elementos del DOM
+    const idSetup             = document.getElementById('idSetup');
+    const callInterface       = document.getElementById('callInterface');
+    const customIdInput       = document.getElementById('customId');
+    const connectButton       = document.getElementById('connectButton');
+    const startButton         = document.getElementById('startButton');
+    const connectPeerButton   = document.getElementById('connectPeerButton');
+    const disconnectPeerButton= document.getElementById('disconnectPeerButton');
+    const callButton          = document.getElementById('callButton');
+    const videoCallButton     = document.getElementById('videoCallButton');
+    const hangupButton        = document.getElementById('hangupButton');
+    const localId             = document.getElementById('localId');
+    const remoteId            = document.getElementById('remoteId');
+    const statusEl            = document.getElementById('status');
+    const changeIdBtn         = document.getElementById('changeId');
+    const logoutBtn           = document.getElementById('logoutBtn');
+    const currentIdSpan       = document.getElementById('currentId');
+    const chatButton          = document.getElementById('chatButton');
+    const chatInterface       = document.getElementById('chatInterface');
+    const closeChat           = document.getElementById('closeChat');
+    const chatMessages        = document.getElementById('chatMessages');
+    const messageInput        = document.getElementById('messageInput');
+    const sendMessage         = document.getElementById('sendMessage');
+    const chatWithUser        = document.getElementById('chatWithUser');
+
+    // Interfaz de Videollamada
+    const videoCallInterface  = document.getElementById('videoCallInterface');
+    const closeVideoCallBtn   = document.getElementById('closeVideoCall');
+    const endVideoCallBtn     = document.getElementById('endVideoCall');
+    const localVideo          = document.getElementById('localVideo');
+    const remoteVideo         = document.getElementById('remoteVideo');
+
+    // PeerJS config con STUN/TURN
+    const peerConfig = {
+      config: {
+        'iceServers': [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' }
+        ]
+      },
+      debug: 3
+    };
+
+    // Si ya hay un ID guardado, mostramos la interfaz de llamada
+    if (savedId) {
+      showCallInterface(savedId);
+    }
+
+    /* Mostrar/Ocultar Interfaz principal */
+    function showCallInterface(id) {
+      idSetup.classList.add('hidden');
+      callInterface.classList.remove('hidden');
+      currentIdSpan.textContent = id;
+      startButton.disabled       = false;
+    }
+
+    /* Logout / Reinicio total de la app */
+    function logout() {
+      localStorage.removeItem('callerId');
+
+      if (currentCall) {
+        currentCall.close();
+        currentCall = null;
+      }
+      if (peer) {
+        peer.destroy();
+        peer = null;
+      }
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+      }
+      if (localVideoStream) {
+        localVideoStream.getTracks().forEach(track => track.stop());
+        localVideoStream = null;
+      }
+      if (currentChatConnection) {
+        currentChatConnection.close();
+        currentChatConnection = null;
+      }
+
+      connectedPeerId = null;
+
+      callInterface.classList.add('hidden');
+      idSetup.classList.remove('hidden');
+      customIdInput.value = '';
+      localId.value       = '';
+      remoteId.value      = '';
+      updateStatus('Desconectado', false);
+
+      // Botones
+      startButton.disabled       = false;
+      callButton.disabled        = true;
+      videoCallButton.disabled   = true;
+      hangupButton.disabled      = true;
+      connectPeerButton.disabled = true;
+      disconnectPeerButton.disabled = true;
+      chatButton.disabled        = true;
+
+      // Chat
+      chatInterface.style.display = 'none';
+      chatMessages.innerHTML      = '';
+      messageInput.value          = '';
+
+      hideVideoCallInterface();
+    }
+
+    /* Actualizar el estado en la interfaz */
+    function updateStatus(text, isConnected) {
+      const statusDot = statusEl.querySelector('.status-dot');
+      if (isConnected) {
+        statusDot.classList.remove('disconnected');
+        statusDot.classList.add('connected');
+      } else {
+        statusDot.classList.remove('connected');
+        statusDot.classList.add('disconnected');
+      }
+      statusEl.innerHTML = `
+        <span class="status-dot ${isConnected ? 'connected' : 'disconnected'}"></span>
+        Estado: ${text}
+      `;
+    }
+
+    /* Conectar con ID personalizado */
+    connectButton.addEventListener('click', () => {
+      const customId = customIdInput.value.trim();
+      if (!customId) {
+        alert('Por favor ingresa un identificador válido');
+        return;
+      }
+
+      peer = new Peer(customId, peerConfig);
+
+      peer.on('open', (id) => {
+        localStorage.setItem('callerId', id);
+        showCallInterface(id);
+        localId.value = id;
+        updateStatus('Conectado', true);
+        startButton.disabled       = false;
+        callButton.disabled        = true;
+        videoCallButton.disabled   = true;
+        chatButton.disabled        = true;
+        connectPeerButton.disabled = false;
+      });
+
+      // Esperar llamadas de audio o video
+      peer.on('call', (incomingCall) => {
+        // Verificamos si ya estamos conectados con alguien
+        if (connectedPeerId && connectedPeerId !== incomingCall.peer) {
+          incomingCall.close();
+          return alert(`Ya estás conectado con ${connectedPeerId}. Debes desconectar primero.`);
+        }
+
+        // Preguntar si desea aceptar la llamada
+        const aceptar = confirm(`¿Aceptar llamada entrante (solo audio) de ${incomingCall.peer}?`);
+        if (aceptar) {
+          connectedPeerId = incomingCall.peer;
+          incomingCall.answer(localStream);
+          handleAudioCall(incomingCall);
+        } else {
+          incomingCall.close();
+        }
+      });
+
+      // Manejar conexiones de chat entrantes
+      peer.on('connection', (conn) => {
+        // Verificamos si ya estamos conectados con alguien
+        if (connectedPeerId && connectedPeerId !== conn.peer) {
+          conn.close();
+          return alert(`Ya estás conectado con ${connectedPeerId}. Debes desconectar primero.`);
+        }
+
+        const aceptar = confirm(`El usuario ${conn.peer} quiere conectarse contigo. ¿Aceptar?`);
+        if (aceptar) {
+          connectedPeerId = conn.peer;
+          disconnectPeerButton.disabled = false;
+          handleChatConnection(conn);
+          // Avisamos que la conexión se ha aceptado
+          conn.send({ type: 'CONNECTION_ACCEPTED' });
+          // Habilitamos botones
+          chatButton.disabled        = false;
+          callButton.disabled        = !localStream; // Solo si ya iniciamos el micrófono
+          videoCallButton.disabled   = false;
+        } else {
+          conn.send({ type: 'CONNECTION_DECLINED' });
+          conn.close();
+        }
+      });
+
+      // Manejar errores
+      peer.on('error', (err) => {
+        console.error('Error de conexión:', err);
+        updateStatus('Error de conexión', false);
+        if (err.type === 'unavailable-id') {
+          alert('Este ID ya está en uso. Por favor elige otro.');
+          localStorage.removeItem('callerId');
+          location.reload();
+        }
+      });
+
+      // Si se desconecta
+      peer.on('disconnected', () => {
+        updateStatus('Desconectado', false);
+        if (peer) peer.reconnect();
+      });
+    });
+
+    /* Botón para iniciar solo micrófono (Audio) */
+    startButton.addEventListener('click', async () => {
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+        updateStatus('Micrófono activado', true);
+        startButton.disabled = true;
+        connectPeerButton.disabled = false;
+      } catch (err) {
+        console.error('Error al acceder al micrófono:', err);
+        statusEl.textContent = 'Error: No se pudo acceder al micrófono';
+      }
+    });
+
+    /**********************************
+     *  BOTÓN "CONECTAR CON USUARIO"  *
+     **********************************/
+    connectPeerButton.addEventListener('click', () => {
+      const remotePeerId = remoteId.value.trim();
+      if (!remotePeerId) {
+        alert('Por favor ingresa el ID de conexión remoto');
+        return;
+      }
+      if (!peer || !peer.open) {
+        alert('Primero configura tu identificador y conéctate');
+        return;
+      }
+      if (connectedPeerId && connectedPeerId !== remotePeerId) {
+        return alert(`Ya estás conectado con ${connectedPeerId}. Debes desconectar primero.`);
+      }
+
+      // Intentamos conectar
+      const conn = peer.connect(remotePeerId);
+
+      // Marcamos el ID que intentamos conectar
+      connectedPeerId = remotePeerId;
+
+      // Aviso de intento de conexión
+      alert(`Enviando solicitud de conexión a ${remotePeerId}...`);
+
+      conn.on('open', () => {
+        // La conexión de datos (chat) está abierta,
+        // pero falta confirmar si el otro usuario la aceptó en su confirm.
+      });
+
+      conn.on('data', (data) => {
+        // Revisamos si el remoto envió algo de aceptación o rechazo
+        if (data && data.type === 'CONNECTION_ACCEPTED') {
+          alert(`El usuario ${remotePeerId} aceptó la conexión.`);
+          disconnectPeerButton.disabled = false;
+          // Habilitamos botones de chat, llamada y videollamada
+          chatButton.disabled        = false;
+          callButton.disabled        = !localStream; // Solo si ya iniciamos el micrófono
+          videoCallButton.disabled   = false;
+          handleChatConnection(conn);
+        } else if (data && data.type === 'CONNECTION_DECLINED') {
+          alert(`El usuario ${remotePeerId} rechazó la conexión.`);
+          conn.close();
+          connectedPeerId = null;
+          disconnectPeerButton.disabled = true;
+        } else if (typeof data === 'string') {
+          // Podrías manejar mensajes de chat directos aquí,
+          // pero en este ejemplo usamos handleChatConnection.
+        }
+      });
+
+      conn.on('error', () => {
+        alert('No se pudo establecer la conexión de datos.');
+        conn.close();
+        connectedPeerId = null;
+        disconnectPeerButton.disabled = true;
+      });
+
+      // Si no abre la conexión durante 5 segundos, asumimos que no está conectado
+      setTimeout(() => {
+        if (!conn.open) {
+          alert('Usuario no conectado o no respondió.');
+          conn.close();
+          connectedPeerId = null;
+          disconnectPeerButton.disabled = true;
+        }
+      }, 5000);
+    });
+
+    /* Botón Desconectar: cierre de conexión con el usuario actual */
+    disconnectPeerButton.addEventListener('click', () => {
+      if (currentChatConnection) {
+        currentChatConnection.close();
+        currentChatConnection = null;
+      }
+      if (currentCall) {
+        currentCall.close();
+        currentCall = null;
+      }
+      connectedPeerId = null;
+
+      disconnectPeerButton.disabled = true;
+      chatButton.disabled = true;
+      callButton.disabled = true;
+      videoCallButton.disabled = true;
+      hangupButton.disabled = true;
+      
+      alert('Te has desconectado del usuario.');
+
+      // Ocultamos chat y video si estuviesen abiertos
+      chatInterface.style.display = 'none';
+      hideVideoCallInterface();
+      updateStatus('Conectado', true);
+    });
+
+    /* Llamada de solo audio */
+    callButton.addEventListener('click', () => {
+      if (!connectedPeerId) {
+        return alert('No hay ningún usuario conectado para llamar.');
+      }
+      if (!localStream) {
+        return alert('Primero inicia tu micrófono');
+      }
+
+      const call = peer.call(connectedPeerId, localStream);
+      handleAudioCall(call);
+    });
+
+    /* Manejo de llamadas de solo audio */
+    function handleAudioCall(call) {
+      currentCall = call;
+      callButton.disabled      = true;
+      videoCallButton.disabled = true;
+      hangupButton.disabled    = false;
+
+      updateStatus('En llamada (audio)', true);
+
+      call.on('stream', (remoteStream) => {
+        const audio = new Audio();
+        audio.srcObject = remoteStream;
+        audio.play();
+      });
+
+      call.on('close', () => {
+        updateStatus('Conectado', true);
+        hangupButton.disabled    = true;
+        callButton.disabled      = !localStream;
+        videoCallButton.disabled = false;
+      });
+
+      call.on('error', (err) => {
+        console.error('Error en la llamada:', err);
+        updateStatus('Error en la llamada', false);
+        hangupButton.click();
+      });
+    }
+
+    /* Videollamada: Iniciar y manejar */
+    videoCallButton.addEventListener('click', async () => {
+      if (!connectedPeerId) {
+        return alert('No hay ningún usuario conectado para videollamada.');
+      }
+      try {
+        // Obtener video + audio
+        localVideoStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+        showVideoCallInterface();
+        
+        // Realizar llamada de video
+        const call = peer.call(connectedPeerId, localVideoStream);
+        handleVideoCall(call);
+      } catch (error) {
+        console.error('Error al acceder a la cámara/micrófono:', error);
+        alert('No se pudo acceder a la cámara/micrófono');
+      }
+    });
+
+    function handleVideoCall(call) {
+      currentCall = call;
+      updateStatus('En videollamada', true);
+      callButton.disabled      = true;
+      videoCallButton.disabled = true;
+      hangupButton.disabled    = true; // solo es para audio
+
+      call.on('stream', (remoteStream) => {
+        remoteVideo.srcObject = remoteStream;
+      });
+      if (localVideoStream) {
+        localVideo.srcObject = localVideoStream;
+      }
+
+      call.on('close', () => {
+        hideVideoCallInterface();
+        updateStatus('Conectado', true);
+        callButton.disabled      = !localStream;
+        videoCallButton.disabled = false;
+        hangupButton.disabled    = true;
+      });
+
+      call.on('error', (err) => {
+        console.error('Error en la videollamada:', err);
+        updateStatus('Error en la videollamada', false);
+        endVideoCall();
+      });
+    }
+
+    /* Colgar llamada de audio */
+    hangupButton.addEventListener('click', () => {
+      if (currentCall) {
+        currentCall.close();
+        currentCall = null;
+        updateStatus('Conectado', true);
+        hangupButton.disabled    = true;
+        callButton.disabled      = !localStream;
+        videoCallButton.disabled = false;
+      }
+    });
+
+    /* Cambiar ID */
+    changeIdBtn.addEventListener('click', () => {
+      const newId = prompt('Ingresa tu nuevo identificador:', currentIdSpan.textContent);
+      if (newId && newId.trim()) {
+        if (peer) peer.destroy();
+        localStorage.setItem('callerId', newId.trim());
+        showCallInterface(newId.trim());
+        connectPeerButton.disabled = false;
+
+        // Deshabilitamos hasta que reconfiguremos audio
+        callButton.disabled        = true;
+        videoCallButton.disabled   = true;
+        chatButton.disabled        = true;
+      }
+    });
+
+    /* Botón Salir */
+    logoutBtn.addEventListener('click', logout);
+
+    /* Chat */
+    chatButton.addEventListener('click', () => {
+      if (!connectedPeerId) {
+        return alert('No hay ningún usuario conectado para chatear.');
+      }
+      if (!peer || !peer.open) {
+        return alert('Primero configura tu identificador y conéctate');
+      }
+      // Ya que la conexión de chat se creó al presionar "Conectar",
+      // simplemente abrimos la interfaz de chat si la tenemos.
+      if (!currentChatConnection) {
+        const conn = peer.connect(connectedPeerId);
+        handleChatConnection(conn);
+      } else {
+        chatInterface.style.display = 'flex';
+      }
+    });
+
+    function handleChatConnection(conn) {
+      currentChatConnection = conn;
+      chatWithUser.textContent = conn.peer;
+      chatInterface.style.display = 'flex';
+
+      conn.on('data', (data) => {
+        if (data && data.type) {
+          // Se ignoran los mensajes de control
+          return;
+        }
+        // Mensajes de chat "normales"
+        appendMessage(data, false);
+      });
+
+      conn.on('close', () => {
+        appendMessage('El usuario se ha desconectado', false);
+        currentChatConnection = null;
+      });
+    }
+
+    sendMessage.addEventListener('click', () => {
+      const message = messageInput.value.trim();
+      if (message && currentChatConnection) {
+        currentChatConnection.send(message);
+        appendMessage(message, true);
+        messageInput.value = '';
+      }
+    });
+
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        sendMessage.click();
+      }
+    });
+
+    closeChat.addEventListener('click', () => {
+      chatInterface.style.display = 'none';
+    });
+
+    function appendMessage(message, sent) {
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message', sent ? 'sent' : 'received');
+      messageElement.textContent = message;
+      chatMessages.appendChild(messageElement);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    /* Videollamada: Mostrar / Ocultar interfaz */
+    closeVideoCallBtn.addEventListener('click', endVideoCall);
+    endVideoCallBtn.addEventListener('click', endVideoCall);
+
+    function showVideoCallInterface() {
+      videoCallInterface.style.display = 'flex';
+    }
+
+    function hideVideoCallInterface() {
+      videoCallInterface.style.display = 'none';
+      localVideo.srcObject  = null;
+      remoteVideo.srcObject = null;
+
+      // Detener streams de video
+      if (localVideoStream) {
+        localVideoStream.getTracks().forEach(track => track.stop());
+        localVideoStream = null;
+      }
+    }
+
+    function endVideoCall() {
+      if (currentCall) {
+        currentCall.close();
+        currentCall = null;
+      }
+      hideVideoCallInterface();
+      updateStatus('Conectado', true);
+      callButton.disabled      = !localStream;
+      videoCallButton.disabled = false;
+      hangupButton.disabled    = true;
+    }
+  </script>
+</body>
+</html>
